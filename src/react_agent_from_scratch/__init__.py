@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from react-agent-from-scratch!")
+from .main import main
+
+__all__ = ["main"]
