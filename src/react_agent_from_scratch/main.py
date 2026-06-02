@@ -48,5 +48,6 @@ def main() -> None:
             break
         if not user_input:
             continue
-        response = agent.run(user_input)
-        print(f"\nAgent: {response}\n")
+        result = agent.run(user_input)
+        print(f"\nAgent: {result.content}")
+        print(f"[{result.stop_reason} | steps={result.steps} | model_calls={result.model_calls} | tool_calls={result.tool_calls}]\n")
