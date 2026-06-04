@@ -3,12 +3,14 @@ from __future__ import annotations
 from .llm.model import ModelSettings
 from .llm.provider import ModelProviderRegistry
 from .llm.agent import ReActAgent
+from .observability.provider import TracerProvider
 from .tools import Tool, ToolExecutionResult, ToolInputSchema, ToolRegistry
 from .prompts import SYSTEM_PROMPT
 
 
 def build_agent(model_ref: str = "ollama:qwen3:4b") -> ReActAgent:
     registry = ModelProviderRegistry()
+    tracer = TracerProvider().get_tracer()
     provider_name, model_name = ModelProviderRegistry._parse_model_ref(model_ref)
     model = registry.get_model(
         provider_name=provider_name,
@@ -35,6 +37,7 @@ def build_agent(model_ref: str = "ollama:qwen3:4b") -> ReActAgent:
         model=model,
         tools=tools,
         system_prompt=SYSTEM_PROMPT,
+        tracer=tracer,
     )
 
 
