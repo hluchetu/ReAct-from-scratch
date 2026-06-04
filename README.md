@@ -20,9 +20,15 @@ src/react_agent_from_scratch/
 ├── context.py           # Message types: SystemMessage, UserMessage, AssistantMessage, ToolMessage
 ├── prompts.py           # System prompt for the ReAct agent
 ├── tools.py             # Tool, ToolRegistry, ToolExecutionResult
-├── output_parser.py     # Parses raw LLM output into FinalAnswer or ParsedToolCall
+├── output_parser.py     # Parses raw LLM output into FinalAnswer, ParsedToolCall, or ParserFailure
 ├── run.py               # RunConfig, RunLimits, RunState, AgentRunResult, StopReason
 ├── main.py              # Wiring layer — assembles and runs the agent
+├── evals/
+│   ├── test_output_parser.py  # Parser behavior and malformed model output
+│   ├── test_tools.py          # Tool execution, metadata, and recoverable errors
+│   ├── test_run_limits.py     # Runtime circuit breakers
+│   ├── test_react_recovery.py # Parser failure recovery
+│   └── test_tool_recovery.py  # Tool failure recovery
 ├── llm/
 │   ├── model.py         # Model and ModelProvider protocols
 │   ├── llm_client.py    # LLMClient protocol
@@ -77,6 +83,12 @@ LANGFUSE_HOST=https://cloud.langfuse.com
 uv run react-agent-from-scratch
 ```
 
+**4. Run evals**
+
+```bash
+uv run pytest src/react_agent_from_scratch/evals
+```
+
 ## Supported LLM Providers
 
 | Provider | Notes |
@@ -97,7 +109,7 @@ registry.get_model("deepseek", "deepseek-chat", settings)
 
 **`ToolRegistry`** — register any callable as a tool with a name, description, and input schema. The agent calls `execute_tool()` which handles errors and returns a `ToolMessage` so the model can self-correct.
 
-**`ReActOutputParser`** — parses the raw LLM string output into either a `ParsedToolCall` (with extracted `thought` and `ToolCall`) or a `FinalAnswer`.
+**`ReActOutputParser`** — parses the raw LLM string output into a `FinalAnswer`, a `ParsedToolCall`, or a `ParserFailure`. Invalid ReAct formatting is treated as a recoverable runtime observation instead of being mistaken for a final answer.
 
 **`ChatContext`** — tracks the full conversation as a list of typed messages and formats them for the model.
 
@@ -106,3 +118,26 @@ registry.get_model("deepseek", "deepseek-chat", settings)
 **`AgentRunResult`** — structured return type from `agent.run()`. Carries the answer, `stop_reason`, `success` flag, and call counts. Enables callers to branch on outcome without parsing strings.
 
 **Observability** — pluggable tracing via `TracerProvider`. Set `OBSERVABILITY_PROVIDER=langfuse` or `OBSERVABILITY_PROVIDER=phoenix` in `.env` to record every model call, tool execution, and agent step to your observability platform.
+
+## Evals
+
+The eval suite is intentionally small. It protects the core ReAct architecture rather than testing every implementation detail.
+
+| Eval file | What it protects |
+|---|---|
+| `test_output_parser.py` | The model output is correctly classified as a final answer, tool call, or parser failure |
+| `test_tools.py` | Tool calls execute safely, preserve metadata, and return recoverable errors |
+| `test_run_limits.py` | The agent stops at max steps, max model calls, and max tool calls |
+| `test_react_recovery.py` | Bad model format becomes an observation and the agent can self-correct |
+| `test_tool_recovery.py` | Unknown tools become recoverable observations and the agent can continue |
+
+For this project, evals focus on deterministic agent behavior:
+
+```text
+Can the parser understand the model?
+Can tools fail safely?
+Can the runtime stop the loop?
+Can the agent recover from bad format or bad tools?
+```
+
+That is the minimum useful eval layer for a from-scratch ReAct agent.
