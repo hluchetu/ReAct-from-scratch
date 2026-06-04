@@ -59,6 +59,8 @@ class ToolRegistry(BaseModel):
             return ToolMessage(
                 tool_call_id=tool_call.id,
                 content=f"Error: Tool '{tool_call.name}' not found.",
+                status="error",
+                metadata={"recoverable": True, "reason": "unknown_tool"},
             )
 
         try:
@@ -66,9 +68,13 @@ class ToolRegistry(BaseModel):
             return ToolMessage(
                 tool_call_id=tool_call.id,
                 content=result.content,
+                status=result.status,
+                metadata=result.metadata,
             )
         except Exception as exc:
             return ToolMessage(
                 tool_call_id=tool_call.id,
                 content=f"Error executing tool '{tool_call.name}': {exc}",
+                status="error",
+                metadata={"recoverable": True, "reason": "tool_exception"},
             )

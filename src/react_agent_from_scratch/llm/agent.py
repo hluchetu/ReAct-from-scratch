@@ -9,7 +9,12 @@ from ..observability.tracing import (
     TraceContext,
     TraceEvent,
 )
-from ..output_parser import FinalAnswer, ParsedToolCall, ReActOutputParser
+from ..output_parser import (
+    FinalAnswer,
+    ParsedToolCall,
+    ReActOutputParser,
+    ParserFailure,
+)
 from ..run import AgentRunResult, RunConfig, RunState
 from ..tools import ToolRegistry
 from .model import Model
@@ -178,6 +183,25 @@ class ReActAgent:
                     model_calls=state.model_call_count,
                     tool_calls=state.tool_call_count,
                 )
+            if isinstance(parsed_output, ParserFailure):
+                self.tracer.record_event(
+                    TraceEvent(
+                        name="parser_failure",
+                        level="error",
+                        message=parsed_output.message,
+                        metadata={
+                            "step": state.step_count,
+                            "raw_output": parsed_output.raw_output,
+                        },
+                    )
+                )
+                context.add_assistant_message(content=parsed_output.raw_output)
+                context.add_tool_message(
+                    tool_call_id="parser",
+                    content=parsed_output.message,
+                )
+
+                continue
 
             if isinstance(parsed_output, ParsedToolCall):
                 context.add_assistant_message(

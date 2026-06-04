@@ -31,6 +31,8 @@ class ToolMessage(BaseModel):
     type: Literal["tool"] = "tool"
     tool_call_id: str
     content: str
+    status: Literal["success", "error"] = "success"
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 Message = Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]
@@ -52,8 +54,21 @@ class ChatContext(BaseModel):
             tool_calls = []
         self.messages.append(AssistantMessage(content=content, tool_calls=tool_calls))
 
-    def add_tool_message(self, tool_call_id: str, content: str) -> None:
-        self.messages.append(ToolMessage(tool_call_id=tool_call_id, content=content))
+    def add_tool_message(
+        self,
+        tool_call_id: str,
+        content: str,
+        status: Literal["success", "error"] = "success",
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        self.messages.append(
+            ToolMessage(
+                tool_call_id=tool_call_id,
+                content=content,
+                status=status,
+                metadata=metadata or {},
+            )
+        )
 
     def format_for_model(self) -> str:
         formatted_messages: list[str] = []
@@ -70,6 +85,7 @@ class ChatContext(BaseModel):
                     )
             elif isinstance(message, ToolMessage):
                 formatted_messages.append(
-                    f"[TOOL_RESULT] {message.tool_call_id}: {message.content}"
+                    f"[TOOL_RESULT:{message.status}] "
+                    f"{message.tool_call_id}: {message.content}"
                 )
         return "\n\n".join(formatted_messages)

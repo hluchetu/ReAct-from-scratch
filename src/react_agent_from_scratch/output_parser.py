@@ -21,7 +21,13 @@ class ParsedToolCall(BaseModel):
     tool_call: ToolCall
 
 
-ParsedModelOutput = FinalAnswer | ParsedToolCall
+class ParserFailure(BaseModel):
+    type: Literal["parser_failure"] = "parser_failure"
+    message: str
+    raw_output: str
+
+
+ParsedModelOutput = FinalAnswer | ParsedToolCall | ParserFailure
 
 
 class ReActOutputParser:
@@ -29,11 +35,19 @@ class ReActOutputParser:
         final_answer = self._parse_final_answer(text)
         if final_answer is not None:
             return final_answer
+
         tool_call = self._parse_tool_call(text)
         if tool_call is not None:
             return tool_call
 
-        return FinalAnswer(content=text.strip())
+        return ParserFailure(
+            message=(
+                "Model output did not match the expected ReAct format. "
+                "Use either 'Final Answer: ...' or "
+                '\'Thought: ... Tool Call: {"name": "...", "args": {...}}\'.'
+            ),
+            raw_output=text,
+        )
 
     def _parse_final_answer(self, text: str) -> FinalAnswer | None:
         match = re.search(r"Final Answer:\s*(.*)", text, re.DOTALL)
@@ -61,15 +75,11 @@ class ReActOutputParser:
             )
             return ParsedToolCall(thought=thought, tool_call=tool_call)
         except (json.JSONDecodeError, KeyError):
-            return None
-
-    def _parse_args(self, raw_args: str) -> dict:
-        try:
-            parsed = json.loads(raw_args)
-        except json.JSONDecodeError:
-            return {"input": raw_args}
-
-        if isinstance(parsed, dict):
-            return parsed
-
-        return {"input": parsed}
+            return ParserFailure(
+                message=(
+                    "Tool call JSON was invalid. "
+                    "Use this format: "
+                    '{"name": "tool_name", "args": {"key": "value"}}.'
+                ),
+                raw_output=text,
+            )
