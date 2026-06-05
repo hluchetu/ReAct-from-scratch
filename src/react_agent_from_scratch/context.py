@@ -10,8 +10,8 @@ class SystemMessage(BaseModel):
     content: str
 
 
-class UserMessage(BaseModel):
-    type: Literal["user"] = "user"
+class HumanMessage(BaseModel):
+    type: Literal["human"] = "human"
     content: str
 
 
@@ -21,8 +21,8 @@ class ToolCall(BaseModel):
     args: dict[str, Any]
 
 
-class AssistantMessage(BaseModel):
-    type: Literal["assistant"] = "assistant"
+class AIMessage(BaseModel):
+    type: Literal["ai"] = "ai"
     content: str
     tool_calls: list[ToolCall] = Field(default_factory=list)
 
@@ -35,7 +35,7 @@ class ToolMessage(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-Message = Union[SystemMessage, UserMessage, AssistantMessage, ToolMessage]
+Message = Union[SystemMessage, HumanMessage, AIMessage, ToolMessage]
 
 
 class ChatContext(BaseModel):
@@ -44,15 +44,15 @@ class ChatContext(BaseModel):
     def add_system_message(self, content: str) -> None:
         self.messages.append(SystemMessage(content=content))
 
-    def add_user_message(self, content: str) -> None:
-        self.messages.append(UserMessage(content=content))
+    def add_human_message(self, content: str) -> None:
+        self.messages.append(HumanMessage(content=content))
 
-    def add_assistant_message(
+    def add_ai_message(
         self, content: str, tool_calls: list[ToolCall] = None
     ) -> None:
         if tool_calls is None:
             tool_calls = []
-        self.messages.append(AssistantMessage(content=content, tool_calls=tool_calls))
+        self.messages.append(AIMessage(content=content, tool_calls=tool_calls))
 
     def add_tool_message(
         self,
@@ -75,10 +75,10 @@ class ChatContext(BaseModel):
         for message in self.messages:
             if isinstance(message, SystemMessage):
                 formatted_messages.append(f"[SYSTEM] {message.content}")
-            elif isinstance(message, UserMessage):
-                formatted_messages.append(f"[USER] {message.content}")
-            elif isinstance(message, AssistantMessage):
-                formatted_messages.append(f"[ASSISTANT] {message.content}")
+            elif isinstance(message, HumanMessage):
+                formatted_messages.append(f"[HUMAN] {message.content}")
+            elif isinstance(message, AIMessage):
+                formatted_messages.append(f"[AI] {message.content}")
                 for tool_call in message.tool_calls:
                     formatted_messages.append(
                         f"[TOOL_CALL] {tool_call.name}({tool_call.args})"

@@ -39,7 +39,7 @@ class ReActAgent:
     def run(self, user_message: str) -> AgentRunResult:
         context = ChatContext()
         context.add_system_message(self.system_prompt)
-        context.add_user_message(user_message)
+        context.add_human_message(user_message)
 
         state = RunState()
         limits = self.config.limits
@@ -195,7 +195,7 @@ class ReActAgent:
                         },
                     )
                 )
-                context.add_assistant_message(content=parsed_output.raw_output)
+                context.add_ai_message(content=parsed_output.raw_output)
                 context.add_tool_message(
                     tool_call_id="parser",
                     content=parsed_output.message,
@@ -204,7 +204,7 @@ class ReActAgent:
                 continue
 
             if isinstance(parsed_output, ParsedToolCall):
-                context.add_assistant_message(
+                context.add_ai_message(
                     content=model_output,
                     tool_calls=[parsed_output.tool_call],
                 )
