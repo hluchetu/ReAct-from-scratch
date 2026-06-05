@@ -12,7 +12,7 @@ from ..observability.tracing import (
 from ..output_parser import (
     FinalAnswer,
     ParsedToolCall,
-    ReActOutputParser,
+    AgentOutputParser,
     ParserFailure,
     ResponseFormat,
 )
@@ -35,7 +35,7 @@ class ReActAgent:
         self.system_prompt = system_prompt
         self.config = config
         self.tracer = tracer or NoOpTracer()
-        self.output_parser = ReActOutputParser()
+        self.output_parser = AgentOutputParser()
 
     def run(self, user_message: str) -> AgentRunResult:
         context = ChatContext()

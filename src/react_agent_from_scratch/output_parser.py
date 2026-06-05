@@ -36,7 +36,7 @@ class ParserFailure(BaseModel):
 ParsedModelOutput = FinalAnswer | ParsedToolCall | ParserFailure
 
 
-class ReActOutputParser:
+class AgentOutputParser:
     def parse(self, text: str) -> ParsedModelOutput:
         try:
             response = ResponseFormat.model_validate_json(text)

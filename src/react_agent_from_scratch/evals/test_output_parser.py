@@ -6,12 +6,12 @@ from react_agent_from_scratch.output_parser import (
     FinalAnswer,
     ParsedToolCall,
     ParserFailure,
-    ReActOutputParser,
+    AgentOutputParser,
 )
 
 
 def test_parses_final_answer() -> None:
-    parser = ReActOutputParser()
+    parser = AgentOutputParser()
 
     result = parser.parse(json.dumps({
         "thought": "I know the answer.",
@@ -24,7 +24,7 @@ def test_parses_final_answer() -> None:
 
 
 def test_parses_valid_tool_call() -> None:
-    parser = ReActOutputParser()
+    parser = AgentOutputParser()
 
     result = parser.parse(json.dumps({
         "thought": "I need current information.",
@@ -40,7 +40,7 @@ def test_parses_valid_tool_call() -> None:
 
 
 def test_invalid_format_returns_parser_failure() -> None:
-    parser = ReActOutputParser()
+    parser = AgentOutputParser()
 
     result = parser.parse("I should probably search the web first.")
 
@@ -50,7 +50,7 @@ def test_invalid_format_returns_parser_failure() -> None:
 
 
 def test_invalid_tool_json_returns_parser_failure() -> None:
-    parser = ReActOutputParser()
+    parser = AgentOutputParser()
 
     result = parser.parse("{ this is not valid json }")
 
@@ -58,7 +58,7 @@ def test_invalid_tool_json_returns_parser_failure() -> None:
 
 
 def test_missing_tool_name_returns_parser_failure() -> None:
-    parser = ReActOutputParser()
+    parser = AgentOutputParser()
 
     result = parser.parse(json.dumps({
         "thought": "I should search.",
