@@ -14,17 +14,24 @@ class UnknownToolThenFinalModel:
         self.calls = 0
         self.prompts: list[str] = []
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, response_format=None) -> str:
+        import json
         self.calls += 1
         self.prompts.append(prompt)
 
         if self.calls == 1:
-            return (
-                "Thought: I should use a tool.\n"
-                'Tool Call: {"name": "missing_tool", "args": {"query": "MCP"}}'
-            )
+            return json.dumps({
+                "thought": "I should use a tool.",
+                "type": "tool_call",
+                "tool_name": "missing_tool",
+                "args": {"query": "MCP"},
+            })
 
-        return "Final Answer: I corrected after seeing the missing tool observation."
+        return json.dumps({
+            "thought": "I corrected after seeing the missing tool observation.",
+            "type": "final_answer",
+            "answer": "I corrected after seeing the missing tool observation.",
+        })
 
 
 def test_unknown_tool_error_becomes_observation_and_agent_recovers() -> None:

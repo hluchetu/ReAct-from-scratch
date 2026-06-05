@@ -14,14 +14,19 @@ class InvalidThenFinalModel:
         self.calls = 0
         self.prompts: list[str] = []
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, response_format=None) -> str:
+        import json
         self.calls += 1
         self.prompts.append(prompt)
 
         if self.calls == 1:
             return "I should probably search first, but I forgot the format."
 
-        return "Final Answer: I corrected my format after reading the observation."
+        return json.dumps({
+            "thought": "I corrected my format after reading the observation.",
+            "type": "final_answer",
+            "answer": "I corrected my format after reading the observation.",
+        })
 
 
 def test_parser_failure_becomes_observation_and_agent_recovers() -> None:
@@ -50,4 +55,4 @@ def test_parser_failure_becomes_observation_and_agent_recovers() -> None:
     second_prompt = model.prompts[1]
 
     assert "[TOOL_RESULT:success] parser:" in second_prompt
-    assert "Model output did not match the expected ReAct format" in second_prompt
+    assert "not valid JSON" in second_prompt

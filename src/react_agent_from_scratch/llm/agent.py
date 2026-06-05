@@ -14,6 +14,7 @@ from ..output_parser import (
     ParsedToolCall,
     ReActOutputParser,
     ParserFailure,
+    ResponseFormat,
 )
 from ..run import AgentRunResult, RunConfig, RunState
 from ..tools import ToolRegistry
@@ -142,7 +143,7 @@ class ReActAgent:
                 )
             )
 
-            model_output = self.model.generate(prompt)
+            model_output = self.model.generate(prompt, response_format=ResponseFormat)
             state.model_call_count += 1
 
             self.tracer.end_span(

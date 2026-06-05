@@ -1,13 +1,19 @@
 from __future__ import annotations
 
-import json
-import re
-from typing import Literal
+from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel
 
 from .context import ToolCall
+
+
+class ResponseFormat(BaseModel):
+    thought: str
+    type: Literal["tool_call", "final_answer"]
+    tool_name: str | None = None
+    args: dict[str, Any] | None = None
+    answer: str | None = None
 
 
 class FinalAnswer(BaseModel):
@@ -32,54 +38,37 @@ ParsedModelOutput = FinalAnswer | ParsedToolCall | ParserFailure
 
 class ReActOutputParser:
     def parse(self, text: str) -> ParsedModelOutput:
-        final_answer = self._parse_final_answer(text)
-        if final_answer is not None:
-            return final_answer
-
-        tool_call = self._parse_tool_call(text)
-        if tool_call is not None:
-            return tool_call
-
-        return ParserFailure(
-            message=(
-                "Model output did not match the expected ReAct format. "
-                "Use either 'Final Answer: ...' or "
-                '\'Thought: ... Tool Call: {"name": "...", "args": {...}}\'.'
-            ),
-            raw_output=text,
-        )
-
-    def _parse_final_answer(self, text: str) -> FinalAnswer | None:
-        match = re.search(r"Final Answer:\s*(.*)", text, re.DOTALL)
-
-        if match is None:
-            return None
-
-        return FinalAnswer(content=match.group(1).strip())
-
-    def _parse_tool_call(self, text: str) -> ParsedToolCall | None:
-        match = re.search(r"Thought:\s*(.*?)\s*Tool Call:\s*(\{.*\})", text, re.DOTALL)
-
-        if match is None:
-            return None
-
-        thought = match.group(1).strip()
-        tool_call_json = match.group(2).strip()
-
         try:
-            tool_call_dict = json.loads(tool_call_json)
-            tool_call = ToolCall(
-                id=str(uuid4()),
-                name=tool_call_dict["name"],
-                args=tool_call_dict.get("args", {}),
-            )
-            return ParsedToolCall(thought=thought, tool_call=tool_call)
-        except (json.JSONDecodeError, KeyError):
+            response = ResponseFormat.model_validate_json(text)
+        except Exception:
             return ParserFailure(
                 message=(
-                    "Tool call JSON was invalid. "
-                    "Use this format: "
-                    '{"name": "tool_name", "args": {"key": "value"}}.'
+                    "Model output was not valid JSON matching the expected schema. "
+                    "Expected a JSON object with 'thought', 'type', and either "
+                    "'tool_name'/'args' or 'answer'."
                 ),
                 raw_output=text,
             )
+
+        if response.type == "final_answer":
+            return FinalAnswer(content=response.answer or response.thought)
+
+        if response.type == "tool_call":
+            if not response.tool_name:
+                return ParserFailure(
+                    message="Tool call is missing 'tool_name'.",
+                    raw_output=text,
+                )
+            return ParsedToolCall(
+                thought=response.thought,
+                tool_call=ToolCall(
+                    id=str(uuid4()),
+                    name=response.tool_name,
+                    args=response.args or {},
+                ),
+            )
+
+        return ParserFailure(
+            message=f"Unknown response type: {response.type}.",
+            raw_output=text,
+        )

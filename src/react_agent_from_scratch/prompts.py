@@ -18,18 +18,6 @@ Do not use web_search when:
 - the question can be answered from general knowledge.
 - the user is asking for explanation, brainstorming, or writing help that does not require current facts.
 
-When you need a tool, respond exactly in this format:
-
-Thought: explain briefly what information you need and why.
-Action: tool_name
-Action Input: the input to the tool
-
-After a tool result is provided, use the observation to decide whether to call another tool or answer.
-
-When you have enough information, respond exactly in this format:
-
-Final Answer: your answer
-
 Rules:
 - Use only one tool call at a time.
 - Use only tools that are listed as available.

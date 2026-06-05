@@ -15,11 +15,14 @@ class AlwaysToolModel:
     name = "fake-always-tool"
     settings = ModelSettings()
 
-    def generate(self, prompt: str) -> str:
-        return (
-            "Thought: I should use a tool.\n"
-            'Tool Call: {"name": "echo", "args": {"text": "hello"}}'
-        )
+    def generate(self, prompt: str, response_format=None) -> str:
+        import json
+        return json.dumps({
+            "thought": "I should use a tool.",
+            "type": "tool_call",
+            "tool_name": "echo",
+            "args": {"text": "hello"},
+        })
 
 
 def build_test_agent(config: RunConfig) -> ReActAgent:

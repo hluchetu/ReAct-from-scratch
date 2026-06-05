@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from openai import OpenAI
+from pydantic import BaseModel
 
 from .llm_client import LLMClient
 from .model import ModelSettings
@@ -21,22 +22,28 @@ class DeepSeekClient:
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.thinking = thinking
 
-    def generate(self, prompt: str) -> str:
+    def generate(
+        self,
+        prompt: str,
+        response_format: type[BaseModel] | None = None,
+    ) -> str:
         extra_body = (
             {"thinking": {"type": "enabled"}}
             if self.thinking
             else {"thinking": {"type": "disabled"}}
         )
-        response = self.client.chat.completions.create(
+        kwargs = dict(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             extra_body=extra_body,
             temperature=0,
-            system=False,
             reasoning_effort="high" if self.thinking else None,
             stream=False,
         )
+        if response_format is not None and not self.thinking:
+            kwargs["response_format"] = response_format
 
+        response = self.client.beta.chat.completions.parse(**kwargs)
         return response.choices[0].message.content or ""
 
 

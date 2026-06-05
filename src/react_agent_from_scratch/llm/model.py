@@ -16,7 +16,11 @@ class Model(Protocol):
     name: str
     settings: ModelSettings
 
-    def generate(self, prompt: str) -> str: ...
+    def generate(
+        self,
+        prompt: str,
+        response_format: type[BaseModel] | None = None,
+    ) -> str: ...
 
 
 class ModelProvider(Protocol):

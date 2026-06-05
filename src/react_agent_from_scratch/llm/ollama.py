@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import urllib.request
 
+from pydantic import BaseModel
+
 from .model import Model, ModelSettings
 
 
@@ -12,14 +14,20 @@ class OllamaModel:
         self.settings = settings
         self._base_url = base_url.rstrip("/")
 
-    def generate(self, prompt: str) -> str:
-        body = json.dumps(
-            {
-                "model": self.name,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": self.settings.temperature,
-            }
-        ).encode()
+    def generate(
+        self,
+        prompt: str,
+        response_format: type[BaseModel] | None = None,
+    ) -> str:
+        payload: dict = {
+            "model": self.name,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": self.settings.temperature,
+        }
+        if response_format is not None:
+            payload["format"] = response_format.model_json_schema()
+
+        body = json.dumps(payload).encode()
 
         request = urllib.request.Request(
             f"{self._base_url}/api/generate",
