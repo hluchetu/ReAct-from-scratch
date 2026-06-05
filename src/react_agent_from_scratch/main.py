@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from .config import settings
+from .llm.agent import ReActAgent
 from .llm.model import ModelSettings
 from .llm.provider import ModelProviderRegistry
-from .llm.agent import ReActAgent
 from .observability.provider import TracerProvider
-from .tools import Tool, ToolExecutionResult, ToolInputSchema, ToolRegistry
 from .prompts import SYSTEM_PROMPT
+from .tools import ToolRegistry
+from .tools.web_search import build_web_search_tool
 
 
 def build_agent(model_ref: str = "ollama:qwen3:4b") -> ReActAgent:
@@ -19,19 +21,7 @@ def build_agent(model_ref: str = "ollama:qwen3:4b") -> ReActAgent:
     )
 
     tools = ToolRegistry()
-    tools.register_tool(
-        Tool(
-            name="web_search",
-            description="Search the web for current information.",
-            input_schema=ToolInputSchema(
-                properties={"query": {"type": "string"}},
-                required=["query"],
-            ),
-            run=lambda args: ToolExecutionResult(
-                content=f"[web_search stub] No results for: {args.get('query')}"
-            ),
-        )
-    )
+    tools.register_tool(build_web_search_tool(api_key=settings.tavily_api_key))
 
     return ReActAgent(
         model=model,
