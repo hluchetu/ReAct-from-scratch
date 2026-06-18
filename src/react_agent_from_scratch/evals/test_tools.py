@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from react_agent_from_scratch.context import ToolCall
+from react_agent_from_scratch.message import ToolCall
 from react_agent_from_scratch.tools import (
     Tool,
     ToolExecutionResult,

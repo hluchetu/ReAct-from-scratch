@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from ..context import ChatContext
+from ..message import HumanMessage
+from ..message import Message
 from ..observability.tracing import (
     AgentTracer,
     NoOpTracer,
@@ -18,13 +20,13 @@ from ..output_parser import (
 )
 from ..run import AgentRunResult, RunConfig, RunState
 from ..tools import ToolRegistry
-from .model import Model
+from .model import ChatModel
 
 
 class ReActAgent:
     def __init__(
         self,
-        model: Model,
+        model: ChatModel,
         tools: ToolRegistry,
         system_prompt: str,
         config: RunConfig = RunConfig(),
@@ -129,13 +131,15 @@ class ReActAgent:
 
             state.step_count += 1
 
-            prompt = context.format_for_model()
+            model_messages: list[Message] = [
+                HumanMessage(content=context.format_for_model())
+            ]
 
             self.tracer.start_span(
                 SpanContext(
-                    name="model.generate",
+                    name="model.invoke",
                     span_type="model",
-                    input=prompt,
+                    input=[message.model_dump() for message in model_messages],
                     metadata={
                         "step": state.step_count,
                         "model": self.model.name,
@@ -143,7 +147,11 @@ class ReActAgent:
                 )
             )
 
-            model_output = self.model.generate(prompt, response_format=ResponseFormat)
+            model_response = self.model.invoke(
+                model_messages,
+                response_format=ResponseFormat,
+            )
+            model_output = model_response.content
             state.model_call_count += 1
 
             self.tracer.end_span(

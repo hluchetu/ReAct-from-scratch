@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from react_agent_from_scratch.llm.agent import ReActAgent
 from react_agent_from_scratch.llm.model import ModelSettings
+from react_agent_from_scratch.message import AIMessage
+from react_agent_from_scratch.message import Message
 from react_agent_from_scratch.run import RunConfig, RunLimits
 from react_agent_from_scratch.tools import ToolRegistry
 
@@ -14,19 +16,24 @@ class InvalidThenFinalModel:
         self.calls = 0
         self.prompts: list[str] = []
 
-    def generate(self, prompt: str, response_format=None) -> str:
+    def invoke(self, messages: list[Message], response_format=None) -> AIMessage:
         import json
         self.calls += 1
+        prompt = messages[-1].content
         self.prompts.append(prompt)
 
         if self.calls == 1:
-            return "I should probably search first, but I forgot the format."
+            return AIMessage(
+                content="I should probably search first, but I forgot the format."
+            )
 
-        return json.dumps({
-            "thought": "I corrected my format after reading the observation.",
-            "type": "final_answer",
-            "answer": "I corrected my format after reading the observation.",
-        })
+        return AIMessage(
+            content=json.dumps({
+                "thought": "I corrected my format after reading the observation.",
+                "type": "final_answer",
+                "answer": "I corrected my format after reading the observation.",
+            })
+        )
 
 
 def test_parser_failure_becomes_observation_and_agent_recovers() -> None:

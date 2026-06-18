@@ -1,41 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-
-class SystemMessage(BaseModel):
-    type: Literal["system"] = "system"
-    content: str
-
-
-class HumanMessage(BaseModel):
-    type: Literal["human"] = "human"
-    content: str
-
-
-class ToolCall(BaseModel):
-    id: str
-    name: str
-    args: dict[str, Any]
-
-
-class AIMessage(BaseModel):
-    type: Literal["ai"] = "ai"
-    content: str
-    tool_calls: list[ToolCall] = Field(default_factory=list)
-
-
-class ToolMessage(BaseModel):
-    type: Literal["tool"] = "tool"
-    tool_call_id: str
-    content: str
-    status: Literal["success", "error"] = "success"
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-Message = Union[SystemMessage, HumanMessage, AIMessage, ToolMessage]
+from .message import AIMessage
+from .message import HumanMessage
+from .message import Message
+from .message import SystemMessage
+from .message import ToolCall
+from .message import ToolMessage
 
 
 class ChatContext(BaseModel):
@@ -47,9 +21,7 @@ class ChatContext(BaseModel):
     def add_human_message(self, content: str) -> None:
         self.messages.append(HumanMessage(content=content))
 
-    def add_ai_message(
-        self, content: str, tool_calls: list[ToolCall] = None
-    ) -> None:
+    def add_ai_message(self, content: str, tool_calls: list[ToolCall] = None) -> None:
         if tool_calls is None:
             tool_calls = []
         self.messages.append(AIMessage(content=content, tool_calls=tool_calls))

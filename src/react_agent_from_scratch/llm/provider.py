@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from ..config import settings
 from .deepseek import DeepSeekProvider
-from .model import Model, ModelProvider, ModelSettings
+from .model import ChatModel
+from .model import ChatModelProvider
+from .model import ModelSettings
 from .ollama import OllamaProvider
 
 
 class ModelProviderRegistry:
     def __init__(self) -> None:
-        self.providers: dict[str, ModelProvider] = {
+        self.providers: dict[str, ChatModelProvider] = {
             "ollama": OllamaProvider(base_url=settings.ollama_base_url),
             "deepseek": DeepSeekProvider(
                 api_key=settings.deepseek_api_key,
@@ -16,12 +18,12 @@ class ModelProviderRegistry:
             ),
         }
 
-    def register_provider(self, name: str, provider: ModelProvider) -> None:
+    def register_provider(self, name: str, provider: ChatModelProvider) -> None:
         self.providers[name] = provider
 
     def get_model(
         self, provider_name: str, model_name: str, settings: ModelSettings
-    ) -> Model:
+    ) -> ChatModel:
         provider = self.providers.get(provider_name)
         if not provider:
             raise ValueError(f"Model provider '{provider_name}' not found.")

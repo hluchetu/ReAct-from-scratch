@@ -4,6 +4,9 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
+from ..message import AIMessage
+from ..message import Message
+
 
 class ModelSettings(BaseModel):
     temperature: float = 0.0
@@ -12,16 +15,16 @@ class ModelSettings(BaseModel):
     extra: dict[str, object] = Field(default_factory=dict)
 
 
-class Model(Protocol):
+class ChatModel(Protocol):
     name: str
     settings: ModelSettings
 
-    def generate(
+    def invoke(
         self,
-        prompt: str,
+        messages: list[Message],
         response_format: type[BaseModel] | None = None,
-    ) -> str: ...
+    ) -> AIMessage: ...
 
 
-class ModelProvider(Protocol):
-    def get_model(self, model_name: str, settings: ModelSettings) -> Model: ...
+class ChatModelProvider(Protocol):
+    def get_model(self, model_name: str, settings: ModelSettings) -> ChatModel: ...

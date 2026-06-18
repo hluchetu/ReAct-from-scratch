@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..context import ToolCall, ToolMessage
+from ..message import ToolCall, ToolMessage
 
 
 class ToolInputSchema(BaseModel):

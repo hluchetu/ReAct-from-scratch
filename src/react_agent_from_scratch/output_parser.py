@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel
 
-from .context import ToolCall
+from .message import ToolCall
 
 
 class ResponseFormat(BaseModel):

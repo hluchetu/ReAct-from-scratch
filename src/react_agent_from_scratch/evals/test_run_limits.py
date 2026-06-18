@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from react_agent_from_scratch.llm.agent import ReActAgent
 from react_agent_from_scratch.llm.model import ModelSettings
+from react_agent_from_scratch.message import AIMessage
+from react_agent_from_scratch.message import Message
 from react_agent_from_scratch.run import RunConfig, RunLimits
 from react_agent_from_scratch.tools import (
     Tool,
@@ -15,14 +17,16 @@ class AlwaysToolModel:
     name = "fake-always-tool"
     settings = ModelSettings()
 
-    def generate(self, prompt: str, response_format=None) -> str:
+    def invoke(self, messages: list[Message], response_format=None) -> AIMessage:
         import json
-        return json.dumps({
-            "thought": "I should use a tool.",
-            "type": "tool_call",
-            "tool_name": "echo",
-            "args": {"text": "hello"},
-        })
+        return AIMessage(
+            content=json.dumps({
+                "thought": "I should use a tool.",
+                "type": "tool_call",
+                "tool_name": "echo",
+                "args": {"text": "hello"},
+            })
+        )
 
 
 def build_test_agent(config: RunConfig) -> ReActAgent:

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import os
-
 from openai import OpenAI
 from pydantic import BaseModel
 
-from .llm_client import LLMClient
+from ..message import AIMessage
+from ..message import HumanMessage
+from ..message import Message
+from ..message import SystemMessage
+from ..message import ToolMessage
 from .model import ModelSettings
 
 
@@ -22,11 +24,11 @@ class DeepSeekClient:
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.thinking = thinking
 
-    def generate(
+    def invoke(
         self,
-        prompt: str,
+        messages: list[Message],
         response_format: type[BaseModel] | None = None,
-    ) -> str:
+    ) -> AIMessage:
         extra_body = (
             {"thinking": {"type": "enabled"}}
             if self.thinking
@@ -34,7 +36,7 @@ class DeepSeekClient:
         )
         kwargs = dict(
             model=self.model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[self._to_provider_message(message) for message in messages],
             extra_body=extra_body,
             temperature=0,
             reasoning_effort="high" if self.thinking else None,
@@ -44,7 +46,24 @@ class DeepSeekClient:
             kwargs["response_format"] = response_format
 
         response = self.client.beta.chat.completions.parse(**kwargs)
-        return response.choices[0].message.content or ""
+        return AIMessage(content=response.choices[0].message.content or "")
+
+    def _to_provider_message(self, message: Message) -> dict[str, str]:
+        if isinstance(message, SystemMessage):
+            role = "system"
+        elif isinstance(message, HumanMessage):
+            role = "user"
+        elif isinstance(message, AIMessage):
+            role = "assistant"
+        elif isinstance(message, ToolMessage):
+            role = "tool"
+        else:
+            raise TypeError(f"Unsupported message type: {type(message).__name__}")
+
+        return {
+            "role": role,
+            "content": message.content,
+        }
 
 
 class DeepSeekProvider:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from react_agent_from_scratch.llm.agent import ReActAgent
 from react_agent_from_scratch.llm.model import ModelSettings
+from react_agent_from_scratch.message import AIMessage
+from react_agent_from_scratch.message import Message
 from react_agent_from_scratch.run import RunConfig, RunLimits
 from react_agent_from_scratch.tools import ToolRegistry
 
@@ -14,24 +16,29 @@ class UnknownToolThenFinalModel:
         self.calls = 0
         self.prompts: list[str] = []
 
-    def generate(self, prompt: str, response_format=None) -> str:
+    def invoke(self, messages: list[Message], response_format=None) -> AIMessage:
         import json
         self.calls += 1
+        prompt = messages[-1].content
         self.prompts.append(prompt)
 
         if self.calls == 1:
-            return json.dumps({
-                "thought": "I should use a tool.",
-                "type": "tool_call",
-                "tool_name": "missing_tool",
-                "args": {"query": "MCP"},
-            })
+            return AIMessage(
+                content=json.dumps({
+                    "thought": "I should use a tool.",
+                    "type": "tool_call",
+                    "tool_name": "missing_tool",
+                    "args": {"query": "MCP"},
+                })
+            )
 
-        return json.dumps({
-            "thought": "I corrected after seeing the missing tool observation.",
-            "type": "final_answer",
-            "answer": "I corrected after seeing the missing tool observation.",
-        })
+        return AIMessage(
+            content=json.dumps({
+                "thought": "I corrected after seeing the missing tool observation.",
+                "type": "final_answer",
+                "answer": "I corrected after seeing the missing tool observation.",
+            })
+        )
 
 
 def test_unknown_tool_error_becomes_observation_and_agent_recovers() -> None:

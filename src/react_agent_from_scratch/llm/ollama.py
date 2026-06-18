@@ -5,7 +5,13 @@ import urllib.request
 
 from pydantic import BaseModel
 
-from .model import Model, ModelSettings
+from ..message import AIMessage
+from ..message import HumanMessage
+from ..message import Message
+from ..message import SystemMessage
+from ..message import ToolMessage
+from .model import ChatModel
+from .model import ModelSettings
 
 
 class OllamaModel:
@@ -14,15 +20,19 @@ class OllamaModel:
         self.settings = settings
         self._base_url = base_url.rstrip("/")
 
-    def generate(
+    def invoke(
         self,
-        prompt: str,
+        messages: list[Message],
         response_format: type[BaseModel] | None = None,
-    ) -> str:
+    ) -> AIMessage:
         payload: dict = {
             "model": self.name,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": self.settings.temperature,
+            "messages": [self._to_provider_message(message) for message in messages],
+            "options": {
+                "temperature": self.settings.temperature,
+                "num_predict": self.settings.max_tokens,
+            },
+            "stream": False,
         }
         if response_format is not None:
             payload["format"] = response_format.model_json_schema()
@@ -30,7 +40,7 @@ class OllamaModel:
         body = json.dumps(payload).encode()
 
         request = urllib.request.Request(
-            f"{self._base_url}/api/generate",
+            f"{self._base_url}/api/chat",
             data=body,
             headers={"Content-Type": "application/json"},
             method="POST",
@@ -38,12 +48,29 @@ class OllamaModel:
         with urllib.request.urlopen(request, timeout=self.settings.timeout_seconds) as response:
             response_data = json.loads(response.read().decode())
 
-        return response_data.get("response", "").strip()
+        return AIMessage(content=response_data.get("message", {}).get("content", "").strip())
+
+    def _to_provider_message(self, message: Message) -> dict[str, str]:
+        if isinstance(message, SystemMessage):
+            role = "system"
+        elif isinstance(message, HumanMessage):
+            role = "user"
+        elif isinstance(message, AIMessage):
+            role = "assistant"
+        elif isinstance(message, ToolMessage):
+            role = "tool"
+        else:
+            raise TypeError(f"Unsupported message type: {type(message).__name__}")
+
+        return {
+            "role": role,
+            "content": message.content,
+        }
 
 
 class OllamaProvider:
     def __init__(self, base_url: str = "http://localhost:11434") -> None:
         self._base_url = base_url
 
-    def get_model(self, model_name: str, settings: ModelSettings) -> Model:
+    def get_model(self, model_name: str, settings: ModelSettings) -> ChatModel:
         return OllamaModel(name=model_name, base_url=self._base_url, settings=settings)
