@@ -1,47 +1,47 @@
 from __future__ import annotations
 
-from ..config import settings
-from .deepseek import DeepSeekProvider
-from .model import ChatModel
-from .model import ChatModelProvider
-from .model import ModelSettings
-from .ollama import OllamaProvider
+from sophons.integrations.models import (
+    AnthropicProvider,
+    DeepSeekProvider,
+    ModelSettings,
+    OllamaProvider,
+)
+from sophons.models import ChatModel
+from sophons.tools import Tool
+
+from react_agent_from_scratch.config import settings
 
 
 class ModelProviderRegistry:
     def __init__(self) -> None:
-        self.providers: dict[str, ChatModelProvider] = {
+        self.providers = {
             "ollama": OllamaProvider(base_url=settings.ollama_base_url),
-            "deepseek": DeepSeekProvider(
-                api_key=settings.deepseek_api_key,
-                base_url=settings.deepseek_base_url,
-            ),
+            "deepseek": DeepSeekProvider(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url),
+            "anthropic": AnthropicProvider(api_key=settings.anthropic_api_key),
         }
 
-    def register_provider(self, name: str, provider: ChatModelProvider) -> None:
-        self.providers[name] = provider
-
     def get_model(
-        self, provider_name: str, model_name: str, settings: ModelSettings
+        self,
+        provider_name: str,
+        model_name: str,
+        settings: ModelSettings,
+        tools: list[Tool] | None = None,
     ) -> ChatModel:
         provider = self.providers.get(provider_name)
         if not provider:
-            raise ValueError(f"Model provider '{provider_name}' not found.")
-        return provider.get_model(model_name, settings)
+            raise ValueError(
+                f"Unknown provider '{provider_name}'. "
+                f"Available: {', '.join(self.providers)}"
+            )
+        return provider.get_model(model_name, settings, tools=tools)
 
     @staticmethod
     def _parse_model_ref(model_ref: str) -> tuple[str, str]:
         if ":" not in model_ref:
             raise ValueError(
-                "Model reference must use the format 'provider:model', "
-                "for example 'ollama:qwen3:4b' or 'deepseek:deepseek-v4-flash'."
+                f"Model reference must be 'provider:model', e.g. 'deepseek:deepseek-chat'. Got: {model_ref!r}"
             )
-
-        provider_name, model_name = model_ref.split(":", maxsplit=1)
-
-        if not provider_name or not model_name:
-            raise ValueError(
-                "Model reference must include both provider and model name."
-            )
-
-        return provider_name, model_name
+        provider, model = model_ref.split(":", maxsplit=1)
+        if not provider or not model:
+            raise ValueError("Both provider and model name must be non-empty.")
+        return provider, model

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from tavily import TavilyClient
+from typing import Any
 
-from ..tools import Tool, ToolExecutionResult, ToolInputSchema
+from sophons.tools import FunctionTool, tool
 
 
 def _format_results(results: list[dict]) -> str:
@@ -15,46 +15,31 @@ def _format_results(results: list[dict]) -> str:
     return "\n\n".join(lines)
 
 
-def build_web_search_tool(api_key: str) -> Tool:
+def build_sophons_web_search_tool(api_key: str) -> FunctionTool:
+    from tavily import TavilyClient
+
     client = TavilyClient(api_key=api_key)
 
-    def run(args: dict) -> ToolExecutionResult:
-        query = args.get("query", "")
+    @tool
+    def web_search(query: str) -> dict[str, Any]:
+        """Search the web for current information."""
         if not query:
-            return ToolExecutionResult(
-                content="Error: 'query' argument is required.",
-                status="error",
-            )
+            raise ValueError("'query' argument is required.")
 
         response = client.search(
             query=query,
             search_depth="basic",
             max_results=5,
         )
-
         results = response.get("results", [])
-        if not results:
-            return ToolExecutionResult(
-                content=f"No results found for: {query}",
-                status="success",
-            )
 
-        return ToolExecutionResult(
-            content=_format_results(results),
-            metadata={"query": query, "result_count": len(results)},
-            status="success",
-        )
+        return {
+            "query": query,
+            "result_count": len(results),
+            "content": _format_results(results)
+            if results
+            else f"No results found for: {query}",
+            "results": results,
+        }
 
-    return Tool(
-        name="web_search",
-        description=(
-            "Search the web for current information. "
-            "Use for recent events, live facts, prices, news, or anything that may have changed. "
-            "Input must be a concise keyword query."
-        ),
-        input_schema=ToolInputSchema(
-            properties={"query": {"type": "string", "description": "The search query"}},
-            required=["query"],
-        ),
-        run=run,
-    )
+    return web_search
