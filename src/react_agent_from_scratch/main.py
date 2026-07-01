@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 
 from sophons.agents import Agent, AgentResult
+from sophons.agents.hooks import HookRegistry
 from sophons.agents.session import InMemorySessionManager
 from sophons.integrations.models import DeepSeekModel
 
@@ -11,10 +12,10 @@ from .prompts import build_system_prompt
 from .tools import get_all_tools
 
 
-def init_agent() -> Agent:
+def init_agent(hooks: HookRegistry | None = None) -> Agent:
     tools = get_all_tools()
     model = DeepSeekModel(
-        model="deepseek-chat",
+        model="deepseek-reasoner",
         api_key=settings.deepseek_api_key,
     )
 
@@ -23,6 +24,7 @@ def init_agent() -> Agent:
         tools=tools,
         system_prompt=build_system_prompt(datetime.date.today().isoformat()),
         session_manager=InMemorySessionManager(),
+        hooks=hooks,
     )
 
 

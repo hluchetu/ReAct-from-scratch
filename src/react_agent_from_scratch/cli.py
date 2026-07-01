@@ -12,7 +12,9 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
 
-from .main import build_agent
+from sophons.agents.hooks import AfterModelCall, HookRegistry
+
+from .main import init_agent
 
 console = Console()
 
@@ -66,16 +68,33 @@ def _print_tool_use(tool_name: str) -> None:
     console.print(f"  [dim]→ using tool:[/dim] [bold yellow]{tool_name}[/bold yellow]")
 
 
+def _thinking_hook() -> HookRegistry:
+    registry = HookRegistry()
+
+    def on_after_model(event: AfterModelCall) -> None:
+        reasoning = event.message.metadata.get("reasoning")
+        if reasoning:
+            console.print(Panel(
+                reasoning,
+                title="[bold magenta]Thinking[/bold magenta]",
+                border_style="magenta",
+                padding=(0, 1),
+            ))
+
+    registry.register(AfterModelCall, on_after_model)
+    return registry
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="react-chat", description="ReAct agent chat CLI"
     )
     parser.parse_args()
 
-    _print_header("deepseek-chat")
+    _print_header("deepseek-reasoner")
 
     try:
-        agent = build_agent()
+        agent = init_agent(hooks=_thinking_hook())
     except Exception as exc:
         console.print(f"[bold red]Failed to build agent:[/bold red] {exc}")
         sys.exit(1)
