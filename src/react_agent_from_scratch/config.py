@@ -9,10 +9,13 @@ class Settings(BaseSettings):
     )
 
     deepseek_api_key: str = ""
-    ollama_base_url: str = "http://localhost:11434"
-    deepseek_base_url: str = "https://api.deepseek.com/v1"
     anthropic_api_key: str = ""
     tavily_api_key: str = ""
+
+    observability_enabled: bool = False
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
 
 
 settings = Settings()

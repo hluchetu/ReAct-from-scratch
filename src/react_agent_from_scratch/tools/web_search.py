@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from sophons.tools import FunctionTool, tool
+from sophons.tools import tool
+
+from react_agent_from_scratch.config import settings
 
 
 def _format_results(results: list[dict]) -> str:
@@ -15,31 +17,33 @@ def _format_results(results: list[dict]) -> str:
     return "\n\n".join(lines)
 
 
-def build_sophons_web_search_tool(api_key: str) -> FunctionTool:
+def _make_client():
     from tavily import TavilyClient
 
-    client = TavilyClient(api_key=api_key)
+    return TavilyClient(api_key=settings.tavily_api_key)
 
-    @tool
-    def web_search(query: str) -> dict[str, Any]:
-        """Search the web for current information."""
-        if not query:
-            raise ValueError("'query' argument is required.")
 
-        response = client.search(
-            query=query,
-            search_depth="basic",
-            max_results=5,
-        )
-        results = response.get("results", [])
+_client = _make_client()
 
-        return {
-            "query": query,
-            "result_count": len(results),
-            "content": _format_results(results)
-            if results
-            else f"No results found for: {query}",
-            "results": results,
-        }
 
-    return web_search
+@tool
+def web_search(query: str) -> dict[str, Any]:
+    """Search the web for current information."""
+    if not query:
+        raise ValueError("'query' argument is required.")
+
+    response = _client.search(
+        query=query,
+        search_depth="basic",
+        max_results=5,
+    )
+    results = response.get("results", [])
+
+    return {
+        "query": query,
+        "result_count": len(results),
+        "content": _format_results(results)
+        if results
+        else f"No results found for: {query}",
+        "results": results,
+    }

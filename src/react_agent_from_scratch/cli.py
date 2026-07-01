@@ -10,7 +10,6 @@ from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.rule import Rule
 from rich.text import Text
 
 from .main import build_agent
@@ -68,18 +67,15 @@ def _print_tool_use(tool_name: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="react-chat", description="ReAct agent chat CLI")
-    parser.add_argument(
-        "--model",
-        default="deepseek:deepseek-chat",
-        help="Model reference in provider:model format (default: deepseek:deepseek-chat)",
+    parser = argparse.ArgumentParser(
+        prog="react-chat", description="ReAct agent chat CLI"
     )
-    args = parser.parse_args()
+    parser.parse_args()
 
-    _print_header(args.model)
+    _print_header("deepseek-chat")
 
     try:
-        agent = build_agent(args.model)
+        agent = build_agent()
     except Exception as exc:
         console.print(f"[bold red]Failed to build agent:[/bold red] {exc}")
         sys.exit(1)

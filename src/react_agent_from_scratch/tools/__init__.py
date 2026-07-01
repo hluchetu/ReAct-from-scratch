@@ -1,5 +1,7 @@
 from __future__ import annotations
 
-from .web_search import build_sophons_web_search_tool
+from .web_search import web_search
 
-__all__ = ["build_sophons_web_search_tool"]
+
+def get_all_tools() -> list:
+    return [web_search]

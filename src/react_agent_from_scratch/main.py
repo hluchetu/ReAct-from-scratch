@@ -1,28 +1,21 @@
 from __future__ import annotations
 
-from sophons.agents import Agent
-from sophons.agents import AgentResult
-from sophons.agents.session import InMemorySessionManager
-
-from sophons.integrations.models import ModelSettings
-
 import datetime
 
+from sophons.agents import Agent, AgentResult
+from sophons.agents.session import InMemorySessionManager
+from sophons.integrations.models import DeepSeekModel
+
 from .config import settings
-from .llm.provider import ModelProviderRegistry
 from .prompts import build_system_prompt
-from .tools.web_search import build_sophons_web_search_tool
+from .tools import get_all_tools
 
 
-def build_agent(model_ref: str = "ollama:qwen3:4b") -> Agent:
-    registry = ModelProviderRegistry()
-    tools = [build_sophons_web_search_tool(api_key=settings.tavily_api_key)]
-    provider_name, model_name = ModelProviderRegistry._parse_model_ref(model_ref)
-    model = registry.get_model(
-        provider_name=provider_name,
-        model_name=model_name,
-        settings=ModelSettings(),
-        tools=tools,
+def init_agent() -> Agent:
+    tools = get_all_tools()
+    model = DeepSeekModel(
+        model="deepseek-chat",
+        api_key=settings.deepseek_api_key,
     )
 
     return Agent(
@@ -34,7 +27,7 @@ def build_agent(model_ref: str = "ollama:qwen3:4b") -> Agent:
 
 
 def main() -> None:
-    agent = build_agent("ollama:qwen3:4b")
+    agent = init_agent()
     print("ReAct Agent ready. Type 'exit' to quit.\n")
 
     while True:
