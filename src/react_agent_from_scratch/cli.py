@@ -81,7 +81,7 @@ def _thinking_hook() -> HookRegistry:
                 padding=(0, 1),
             ))
 
-    registry.register(AfterModelCall, on_after_model)
+    registry.add(on_after_model)
     return registry
 
 
